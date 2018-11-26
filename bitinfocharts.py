@@ -170,15 +170,11 @@ def filtered_table():
     return df_sum
 
 if __name__ == "__main__":
-    while True:
-        write('\nprogram starts @ {}'.format(time.asctime(time.localtime())))
-        df_filtered = filtered_table()
-        if len(df_filtered) > 0:
-            write('update {} doc @ {}'.format(len(df_filtered), time.asctime(time.localtime())))
-            esbulk('btc_top100_index', 't', df_filtered)
-            write('data transmitts into elasticsearch @ {}'.format(time.asctime(time.localtime())))
-        else:
-            write('none updated data')
-        write('program ceased temporarily @ {}'.format(time.asctime(time.localtime())))
-        time.sleep(1800)
-        write('sleep finishing @ {}\n'.format(time.asctime(time.localtime())))
+    write('\nprogram starts @ {}'.format(time.asctime(time.localtime())))
+    df_filtered = filtered_table()
+    if len(df_filtered) > 0:
+        write('detect {} new docs @ {}'.format(len(df_filtered), time.asctime(time.localtime())))
+        esbulk('btc_top100_index', 't', df_filtered)
+    else:
+        write('none updated data')
+    write('program ceased temporarily @ {}'.format(time.asctime(time.localtime())))

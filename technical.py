@@ -2,10 +2,14 @@ import numpy as np
 import talib
 import pandas as pd
 
-def tech(df, rsi_range1=6, rsi_range2=9, rsi_range3=15, kd_range=9):
+def technical(df, rsi_range=15, kd_range=9, v_range=30):
+    import numpy as np
+    import talib
+    import pandas as pd
+    from math import sqrt
     df_day = df.groupby(['timestamp'])
     volume_day = np.array(df_day.sum()['Amount (BTC)'])
-    price_day = np.array(df_day.mean()['USD price'])
+    h = l = c = price_day = np.array(df_day.mean()['USD price'])
     raw_date = list(df_day.groups.keys())
     
     def iso_format(x):
@@ -14,9 +18,7 @@ def tech(df, rsi_range1=6, rsi_range2=9, rsi_range3=15, kd_range=9):
     
     es_date = list(map(iso_format, list(df_day.groups.keys())))
     
-    rsi1 = talib.RSI(volume_day, timeperiod=rsi_range1)
-    rsi2 = talib.RSI(volume_day, timeperiod=rsi_range2)
-    rsi3 = talib.RSI(volume_day, timeperiod=rsi_range3)
+    rsi = talib.RSI(volume_day, timeperiod=rsi_range)
     
     k, d = talib.STOCH(high=volume_day, 
                 low=volume_day, 
@@ -26,11 +28,12 @@ def tech(df, rsi_range1=6, rsi_range2=9, rsi_range3=15, kd_range=9):
                 slowd_period=3
     )
     
-    df_technical = pd.DataFrame(data = {'Time (UTC)':es_date, 'timestamp':raw_date, 'Amount (BTC)':volume_day, 
-                                        'USD price':price_day, 
-                                        'RSI_{}'.format(rsi_range1):rsi1, 
-                                        'RSI_{}'.format(rsi_range2):rsi2, 
-                                        'RSI_{}'.format(rsi_range3):rsi3, 
-                                        'K_{}'.format(kd_range):k, 'D_{}'.format(kd_range):d
-                                 }).sort_values(by='timestamp', ascending=False)
+    volatility = talib.NATR(h, l, c, timeperiod=v_range) * sqrt(365)
+    
+    df_technical = pd.DataFrame(data = {'es_date':es_date, 'raw_date':raw_date, 'btc_volume':volume_day, 'btc_price':price_day, 
+                         'RSI_{}'.format(rsi_range):rsi, 
+                         'K_{}'.format(kd_range):k, 'D_{}'.format(kd_range):d, 
+                         'V_{}'.format(v_range): volatility
+                                 })
+    df_technical.index = pd.to_datetime(df_technical['raw_date'], format='%Y%m%d', errors='ignore')
     return df_technical
