@@ -15,3 +15,5 @@ if __name__ == "__main__":
         print('{} docs has been updated'.format(len(df)))
     else:
         print('nothing has been updated')
+    
+    update_tech()

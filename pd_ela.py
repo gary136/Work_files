@@ -3,6 +3,9 @@ from espandas import Espandas
 import json
 from elasticsearch import Elasticsearch, TransportError
 import time
+import numpy as np
+import talib
+from math import sqrt
 
 def write(mesg, path='/Users/gary/bitscrappinglog', mode='a'):
     with open(path, mode) as f:
@@ -129,3 +132,43 @@ def json_pandas(data):
     str_d = json.dumps(data)
     df = pd.read_json(str_d, orient='records')
     return df
+
+def technical(df, rsi_range=15, kd_range=9, v_range=30):
+    df_day = df.groupby(['timestamp'])
+    volume_day = np.array(df_day.sum()['Amount (BTC)'])
+    h = l = c = price_day = np.array(df_day.mean()['USD price'])
+    raw_date = list(df_day.groups.keys())
+    
+    def iso_format(x):
+        t = str(x)
+        return t[:4]+'-'+t[4:6]+'-'+t[6:]+'T00:00:00Z'
+    
+    es_date = list(map(iso_format, list(df_day.groups.keys())))
+    
+    rsi = talib.RSI(volume_day, timeperiod=rsi_range)
+    
+    k, d = talib.STOCH(high=volume_day, 
+                low=volume_day, 
+                close=volume_day,
+                fastk_period=kd_range,
+                slowk_period=3,
+                slowd_period=3
+    )
+    
+    volatility = talib.NATR(h, l, c, timeperiod=v_range) * sqrt(365)
+    
+    df_technical = pd.DataFrame(data = {'es_date':es_date, 'timestamp':raw_date, 'btc_volume':volume_day, 'btc_price':price_day, 
+                         'RSI_{}'.format(rsi_range):rsi, 
+                         'K_{}'.format(kd_range):k, 'D_{}'.format(kd_range):d, 
+                         'Vola_{}'.format(v_range): volatility
+                                 })
+    
+    for i in ['btc_volume', 'Vola_{}'.format(v_range), 'btc_price']:
+        df_technical[i] = df_technical[i].apply(round, args=(3, ))
+    df_technical.index = pd.to_datetime(df_technical['timestamp'], format='%Y%m%d', errors='ignore')
+    return df_technical
+
+def update_tech(Index='btc_tech', docType='indicator'):
+    df_tech = technical(json_pandas(es_all()))
+    es.delete_by_query(index=Index, doc_type=docType, body={'query':{"match_all": {}}})
+    res = esbulk(Index, docType, df_tech)

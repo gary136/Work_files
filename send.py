@@ -69,7 +69,7 @@ if __name__ == '__main__':
 #     while True:
     topic = ['security token offering real estate']
 #     'crypto regulation swiss', 'stablecoin', 'crypto bank swiss'
-    to_list = ['sarcas0705@gmail.com', 'farrah@tixguru.co', 'yc@tixguru.co', 'Cathy@tixguru.co', 'santai@tixguru.co', 'jemmy.lai@tixguru.co', 'pete@tixguru.co', 'russel@tixguru.co']
+    to_list = ['farrah@tixguru.co', 'yc@tixguru.co', 'Cathy@tixguru.co', 'santai@tixguru.co', 'jemmy.lai@tixguru.co', 'pete@tixguru.co', 'russel@tixguru.co']
     mail_result=[]
     for i in topic:
         t = mail(i, to_list)
